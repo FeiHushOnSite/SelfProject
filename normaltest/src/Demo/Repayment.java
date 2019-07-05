@@ -17,7 +17,7 @@ public enum Repayment {
     Repayment() {
     }
 
-    Repayment(String type, Integer amount){
+    Repayment(String type, Integer amount) {
         this.type = type;
         this.amount = amount;
     }

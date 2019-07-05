@@ -93,6 +93,7 @@ public class DoubleLinkedListQuickSort {
     }
 
     public static void main(String[] args) {
+        long start = System.currentTimeMillis();
         Node node1 = new Node(5);
         Node node2 = new Node(4);
         Node node3 = new Node(5);
@@ -124,6 +125,8 @@ public class DoubleLinkedListQuickSort {
         List<Integer> list = Arrays.asList(l);
         quickSort(list);
         System.out.println("Sorted list: " + list);
+        long end = System.currentTimeMillis();
+        System.out.println("消耗的运行时间为:" + (end - start));
     }
 
 }
