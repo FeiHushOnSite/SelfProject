@@ -1,4 +1,4 @@
-package leedcode;
+package sort;
 
 import java.util.Scanner;
 
