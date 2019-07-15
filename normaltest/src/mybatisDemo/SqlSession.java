@@ -11,7 +11,7 @@ public class SqlSession {
     public static <T> T getMapper(Class<T> clas)
             throws IllegalArgumentException, InstantiationException, IllegalAccessException {
         return (T) Proxy.newProxyInstance(clas.getClassLoader(), new Class[] { clas },
-                new MyInvocationHandlerMbatis(clas));
+                new MyInvocationHandlerMybatis(clas));
     }
 }
 
