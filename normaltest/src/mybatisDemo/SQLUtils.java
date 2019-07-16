@@ -9,6 +9,7 @@ import java.util.List;
 public class SQLUtils {
     /**
      * 获取Insert语句后面values 参数信息<br>
+     *     替换掉括号和大括号以及#{param}
      *
      * @param sql
      * @return
