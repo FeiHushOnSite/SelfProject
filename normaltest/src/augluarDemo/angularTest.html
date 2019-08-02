@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <script src="https://cdn.staticfile.org/angular.js/1.4.6/angular.min.js"></script>
+</head>
+<body>
+
+<!--<div ng-app="">-->
+    <!--<p>名字 : <input type="text" ng-model="name"></p>-->
+    <!--<h1>Hello {{name}}</h1>-->
+<!--</div>-->
+
+<!--<div ng-app="" ng-init="firstName='John'">-->
+
+    <!--<p>在输入框中尝试输入：</p>-->
+    <!--<p>姓名：<input type="text" ng-model="firstName"></p>-->
+    <!--<p>你输入的为： {{ firstName }}</p>-->
+
+<!--</div>-->
+
+
+<div ng-app="" ng-init="names=[
+{name:'Jani',country:'Norway'},
+{name:'Hege',country:'Sweden'},
+{name:'Kai',country:'Denmark'}]">
+
+    <p>循环对象：</p>
+    <ul>
+        <li ng-repeat="x    in names">
+            {{ x.name + ', ' + x.country }}
+        </li>
+    </ul>
+
+</div>
+</body>
+</html>
