@@ -259,6 +259,8 @@ A: public 不同包,同一包,类内都可用   private: 类内
 
 #### — 保证读写的都是主内存的变量 “synchronized” — 保证在块开始时都同步主内存的值到工作内存，而块结束时将变量同步回主内存,只有成员变量才能使用它。在Java并发程序缺少同步类的情况下，多线程对成员变量的操作对其它线程是透明的。volatile变量可以保证下一个读取操作会在前一个写操作之后发生。线程都会直接从内存中读取该变量并且不缓存它。这就确保了线程读取到的变量是同内存中是一致的。  
 
+使用 volatile 可以禁止 JVM 的指令重排，保证在多线程环境下也能正常运行。 
+
 **java虚拟机栈,规定了两种异常状况：**
 
 1. **如果线程请求的深度大于虚拟机所允许的深度，将抛出StackOverflowError异常**。
@@ -393,6 +395,80 @@ iii.在 session 中存放一个特殊标志。当表单页面被请求时，生�
 ##### 4、web.xml 文件中可以配置哪些内容？
 
 web.xml用于配置Web应用的相关信息, 如:监听器(listener),过滤器(filter), Servlet, 相关参数,会话超时时间,安全验证方式,错误页面等.
+
+##### **5、tomcat相关**
+
+tomcat 集中部署方式：1）直接把Web项目放在webapps下，Tomcat会自动将其部署
+
+2）在server.xml文件上配置<Context>节点，设置相关的属性即可
+
+3）通过Catalina来进行配置:进入到conf\Catalina\localhost文件下，创建一个xml文件，该文件的名字就是站点的名字。
+
+编写XML的方式来进行设置。
+
+tomcat容器是如何创建servlet类实例的？用到了什么原理？
+
+当容器启动时，会读取再webapps目录下所有的web应用中的web.xml文件，然后对xml文件进行解析，并读取servlet注册信息，然后，将每个应用中注册的servlet类都进行加载，并通过反射的方式进行实例化（有时候也是在第一次请求时实例化）在servlet注册时加上如果为正数，则一开始就实例化。如果不写或者为负数，则第一次请求实例化。
+
+tomcat 优化：1、优化连接配置.这里以tomcat7的参数配置为例，需要修改conf/server.xml文件，修改连接数，关闭客户端dns查询。
+
+参数解释：
+
+URIEncoding=”UTF-8″ :使得tomcat可以解析含有中文名的文件的url，真方便，不像apache里还有搞个mod_encoding，还要手工编译
+
+maxSpareThreads : 如果空闲状态的线程数多于设置的数目，则将这些线程中止，减少这个池中的线程总数。
+
+minSpareThreads : 最小备用线程数，tomcat启动时的初始化的线程数。
+
+enableLookups : 这个功效和Apache中的HostnameLookups一样，设为关闭。
+
+connectionTimeout : connectionTimeout为网络连接超时时间毫秒数。
+
+maxThreads : maxThreads Tomcat使用线程来处理接收的每个请求。这个值表示Tomcat可创建的最大的线程数，即最大并发数。
+
+acceptCount : acceptCount是当线程数达到maxThreads后，后续请求会被放入一个等待队列，这个acceptCount是这个队列的大小，如果这个队列也满了，就直接refuse connection
+
+maxProcessors与minProcessors : 在 Java中线程是程序运行时的路径，是在一个程序中与其它控制线程无关的、能够独立运行的代码段。它们共享相同的地址空间。多线程帮助程序员写出CPU最 大利用率的高效程序，使空闲时间保持最低，从而接受更多的请求。
+
+通常Windows是1000个左右，Linux是2000个左右。
+
+可以看到如果把useURIValidationHack设成”false”，可以减少它对一些url的不必要的检查从而减省开销。
+
+enableLookups=”false” ： 为了消除DNS查询对性能的影响我们可以关闭DNS查询，方式是修改server.xml文件中的enableLookups参数值。
+
+disableUploadTimeout ：类似于Apache中的keeyalive一样
+
+给Tomcat配置gzip压缩(HTTP压缩)功能
+
+compression=”on” compressionMinSize=”2048″
+
+compressableMimeType=”text/html,text/xml,text/JavaScript,text/css,text/plain”
+
+HTTP 压缩可以大大提高浏览网站的速度，它的原理是，在客户端请求网页后，从服务器端将网页文件压缩，再下载到客户端，由客户端的浏览器负责解压缩并浏览。相对于普通的浏览过程HTML,CSS,javascript , Text ，它可以节省40%左右的流量。更为重要的是，它可以对动态生成的，包括CGI、PHP , JSP , ASP , Servlet,SHTML等输出的网页也能进行压缩，压缩效率惊人。
+
+1)compression=”on” 打开压缩功能
+
+2)compressionMinSize=”2048″ 启用压缩的输出内容大小，这里面默认为2KB
+
+3)noCompressionUserAgents=”gozilla, traviata” 对于以下的浏览器，不启用压缩
+
+4)compressableMimeType=”text/html,text/xml”　压缩类型
+
+————————————————
+
+内存调优：内存方式的设置是在catalina.sh中，调整一下JAVA_OPTS变量即可，因为后面的启动参数会把JAVA_OPTS作为JVM的启动参数来处理。 
+具体设置如下： 
+JAVA_OPTS="$JAVA_OPTS -Xmx3550m -Xms3550m -Xss128k -XX:NewRatio=4 -XX:SurvivorRatio=4" 
+其各项参数如下： 
+-Xmx3550m：设置JVM最大可用内存为3550M。 
+-Xms3550m：设置JVM促使内存为3550m。此值可以设置与-Xmx相同，以避免每次垃圾回收完成后JVM重新分配内存。 
+-Xmn2g：设置年轻代大小为2G。整个堆大小=年轻代大小 + 年老代大小 + 持久代大小。持久代一般固定大小为64m，所以增大年轻代后，将会减小年老代大小。此值对系统性能影响较大，Sun官方推荐配置为整个堆的3/8。 
+-Xss128k：设置每个线程的堆栈大小。JDK5.0以后每个线程堆栈大小为1M，以前每个线程堆栈大小为256K。更具应用的线程所需内存大小进行调整。在相同物理内存下，减小这个值能生成更多的线程。但是操作系统对一个进程内的线程数还是有限制的，不能无限生成，经验值在3000~5000左右。 
+-XX:NewRatio=4:设置年轻代（包括Eden和两个Survivor区）与年老代的比值（除去持久代）。设置为4，则年轻代与年老代所占比值为1：4，年轻代占整个堆栈的1/5 
+-XX:SurvivorRatio=4：设置年轻代中Eden区与Survivor区的大小比值。设置为4，则两个Survivor区与一个Eden区的比值为2:4，一个Survivor区占整个年轻代的1/6 
+-XX:MaxPermSize=16m:设置持久代大小为16m。 
+-XX:MaxTenuringThreshold=0：设置垃圾最大年龄。如果设置为0的话，则年轻代对象不经过Survivor区，直接进入年老代。对于年老代比较多的应用，可以提高效率。如果将此值设置为一个较大值，则年轻代对象会在Survivor区进行多次复制，这样可以增加对象再年轻代的存活时间，增加在年轻代即被回收的概论。 
+————————————————
 
 
 
@@ -566,7 +642,7 @@ Spring 中的设计模式
 
 模板方法模式—用来解决代码重复的问题。比如： RestTemplate, JmsTemplate, JpaTemplate。
 
-前端控制器模式—Srping 提供了 DispatcherServlet 来对请求进行分发。
+前端控制器模式—Spring提供了 DispatcherServlet 来对请求进行分发。
 
 视图帮助(View Helper )—Spring 提供了一系列的 JSP 标签，高效宏来辅助将分散的代码整合在视图里。
 
@@ -913,8 +989,6 @@ Remote Dictionary Server（Redis）是一个基于 key-value 键值对的持久�
 
 原因很简单，很多时候，在复杂点的缓存场景，缓存不单单是数据库中直接取出来的值。
 
-
-
 Redis 支持的数据类型
 字符串（strings）
 散列（hashes）
@@ -1059,7 +1133,7 @@ Nginx 功能
 
 反向代理服务器：客户端本来可以直接通过 HTTP 协议访问某网站应用服务器，但如果单台服务器承受不住压力需要使用多台服务器共同处理请求，这时可以在中间加上一个 Nginx，客户端请求 Nginx，Nginx 请求应用服务器，然后将结果返回给客户端，此时 Nginx 就是反向代理服务器。
 
-负载均衡:当客户端访问量很大,通过反向代理的方式,使用轮询,加权轮询和IP Hash的策略将请求分配给堕胎服务器.
+负载均衡:当客户端访问量很大,通过反向代理的方式,使用轮询,加权轮询和IP Hash的策略将请求分配给多台服务器.
 
 ##### Quartz:
 
@@ -1091,6 +1165,10 @@ Job: 是一个接口,只有一个方法 void execute(JobExecutionContext context
 
 ### 数据库笔试题:
 
+如果是聚簇索引,该索引本身就是数据以某值的排序,是不能分离的. 其次,哪怕是非聚簇索引,索引本身是为了提高查询速度,只有同数据放在一起才能最大的提高查询速度,分离无论如何怎么都会大大降低效率. 
+
+Oracle在进行数据块高速缓存管理时，索引数据比普通数据具有更高的驻留权限，在进行空间竞争时，Oracle会先移出普通数据，对建有索引的大型表进行数据查询时，索引数据可能会用完所有的数据块缓存空间，Oracle不得不频繁地进行磁盘读写来获取数据，所以，在对一个大型表进行分区之后，可以根据相应的分区建立分区索引。 
+
 用一条 SQL 语句查询出每门课都大于 80 分的学生姓名
 
 ![在这里插入图片描述](https://img-blog.csdnimg.cn/2018111022031368.png) 
@@ -1099,27 +1177,18 @@ Job: 是一个接口,只有一个方法 void execute(JobExecutionContext context
 # 准备数据的 sql 代码：
 
 create	table	score(id	int	primary	key	auto_increment,namevarchar(20),subject
-
 varchar(20),score int);
 
 insert into score values
-
 (null,'张三','语文',81),
-
 (null,'张三','数学',75),
-
 (null,'李四','语文',76),
-
 (null,'李四','数学',90),
-
 (null,'王五','语文',81),
-
 (null,'王五','数学',100),
-
 (null,'王五 ','英语',90);
 
 #答案：
-
 #A：select distinct name from score where name not in (select distinct name from score where score<=80)
 
 #B：select distinct name t1 from score where 80< all (select score from score where name=t1)
@@ -1224,6 +1293,32 @@ select * from flight wheredate_format(starttime,'%Y-%m-%d')='1998-01-02'
 ##### DDL(Data Definition Language)数据定义语言：
 
 适用范围：对数据库中的某些对象(例如，database,table)进行管理，如Create,Alter和Drop.
+
+##### 什么是数据库索引？
+
+索引是一种数据结构，能帮助快速检索数据库中的数据.
+
+##### 索引具体采用的哪种数据结构？
+
+两种结构：Hash索引和B+Tree索引， MySQL使用的是InnoDB引擎，默认是B+树。
+
+##### 为什么采用B+树的索引模型，为什么采用B+树？这和Hash索引比较有什么优缺点？
+
+因为Hash索引底层是哈希表，哈希表是一种以key-value存储数据的结构，所以多个数据在存储关系上是完全没有任何顺序关系的，所以对于区间查询是无法直接通过索引查询的，就需要全表扫描。所以哈希索引只适合于等值查询的场景。而B+树是一种多路平衡查询树，所以它的节点是天然有序列的（左子节点小于父节点，父节点小于右子节点），所以对于范围查询的时候不需要做全表扫描.
+
+实质区别：
+
+​		●　哈希索引适合等值查询，但是无法进行范围查询
+
+​		●　哈希索引没办法利用索引完成排序
+
+​		●　哈希索引不支持多列联合索引的最左匹配规则
+
+​                ●    如果有大量重复键值的情况下，哈希索引的效率会很低，因为存在哈希碰撞的问题。
+
+##### B+Tree叶子节点都可以存储哪些东西？　
+
+InnoDB的B+Tree可能存储的是整行数据，也有可能是主键的值。在InnoDB中，索引B+Tree的叶子节点存储了整行的数据的主键索引，也被称为聚簇索引。而索引B+Tree的叶子节点存储了主键的值是非主键索引，也称为非聚簇索引。
 
 ##### Shell:
 
@@ -2271,6 +2366,44 @@ Mycat 这种 proxy 层方案的**缺点在于需要部署**，自己运维一套
 
 **垂直拆分**的意思，就是**把一个有很多字段的表给拆分成多个表**，**或者是多个库上去**。每个库表的结构都不一样，每个库表都包含部分字段。一般来说，会**将较少的访问频率很高的字段放到一个表里去**，然后**将较多的访问频率很低的字段放到另外一个表里去**。因为数据库是有缓存的，你访问频率高的行字段越少，就可以在缓存里缓存更多的行，性能就越好。这个一般在表层面做的较多一些。 
 
+### Mysql如何为表字段添加索引？？？
+
+1.添加PRIMARY KEY（主键索引）
+
+```sql
+ALTER TABLE `table_name` ADD PRIMARY KEY ( `column` ) 
+```
+
+2.添加UNIQUE(唯一索引)
+
+```sql
+ALTER TABLE `table_name` ADD UNIQUE ( `column` ) 
+```
+
+3.添加INDEX(普通索引)
+
+```sql
+ALTER TABLE `table_name` ADD INDEX index_name ( `column` )
+```
+
+4.添加FULLTEXT(全文索引)
+
+```sql
+ALTER TABLE `table_name` ADD FULLTEXT ( `column`) 
+```
+
+5.添加多列索引
+
+```sql
+ALTER TABLE `table_name` ADD INDEX index_name ( `column1`, `column2`, `column3` )
+```
+
+### 注意避免冗余索引
+
+冗余索引指的是索引的功能相同，能够命中 就肯定能命中 ，那么 就是冗余索引如（name,city ）和（name ）这两个索引就是冗余索引，能够命中后者的查询肯定是能够命中前者的 在大多数情况下，都应该尽量扩展已有的索引而不是创建新索引。
+
+MySQLS.7 版本后，可以通过查询 sys 库的 `schema_redundant_indexes` 表来查看冗余索引
+
 #### 购物车逻辑:
 
 1. 不和数据库交互
@@ -2666,7 +2799,7 @@ Thread.UncaughtExceptionHandler是java SE5中的新接口，它允许我们在�
 **SSL**（Secure Sockets Layer 安全套接层）主要用于Web的安全传输协议，在传输层对网络连接进行加密，保障在Internet上数据传输的安全。
 
 - `HTTP`的端口号为`80`，
-- `HTTPS`的端口号为`443
+- `HTTPS`的端口号为 443
 
 ## 如果让你写一个消息队列，该如何进行架构设计？说一下你的思路。
 
@@ -2813,4 +2946,40 @@ JVM调优：javaXXX--->装载配置--->根据当前路径和系统版本寻找jv
 
 ​						    --->根据配置寻找JVM.dll--->JVM.dll为JVM主要实现
 
-​										           --->初始化JVM获得JNIEnv接口			
+​										      --->初始化JVM获得JNIEnv接口			
+
+1.针对JVM堆的设置，一般可以通过-Xms -Xmx限定其最小、最大值，**为了防止垃圾收集器在最小、最大之间收缩堆而产生额外的时间，通常把最大、最小设置为相同的值;**
+
+**2.年轻代和年老代将根据默认的比例（1：2）分配堆内存**， 可以通过调整二者之间的比率NewRadio来调整二者之间的大小，也可以针对回收代。
+
+比如年轻代，通过 -XX:newSize -XX:MaxNewSize来设置其绝对大小。同样，为了防止年轻代的堆收缩，我们通常会把-XX:newSize -XX:MaxNewSize设置为同样大小。
+
+3.年轻代和年老代设置多大才算合理
+
+**1）更大的年轻代必然导致更小的年老代，大的年轻代会延长普通GC的周期，但会增加每次GC的时间；小的年老代会导致更频繁的Full GC**
+
+**2）更小的年轻代必然导致更大年老代，小的年轻代会导致普通GC很频繁，但每次的GC时间会更短；大的年老代会减少Full GC的频率**
+
+如何选择应该依赖应用程序**对象生命周期的分布情况**： 如果应用存在大量的临时对象，应该选择更大的年轻代；如果存在相对较多的持久对象，年老代应该适当增大。但很多应用都没有这样明显的特性。
+
+**在抉择时应该根 据以下两点：**
+
+（1）本着Full GC尽量少的原则，让年老代尽量缓存常用对象，JVM的默认比例1：2也是这个道理 。
+
+（2）通过观察应用一段时间，看其他在峰值时年老代会占多少内存，在不影响Full GC的前提下，根据实际情况加大年轻代，比如可以把比例控制在1：1。但应该给年老代至少预留1/3的增长空间。
+
+**4.在配置较好的机器上（比如多核、大内存），可以为年老代选择并行收集算法**： **-XX:+UseParallelOldGC** **。**
+
+**5.线程堆栈的设置**：每个线程默认会开启1M的堆栈，用于存放栈帧、调用参数、局部变量等，对大多数应用而言这个默认值太了，一般256K就足用。
+
+理论上，在内存不变的情况下，减少每个线程的堆栈，可以产生更多的线程，但这实际上还受限于操作系统。
+
+-------------------------
+
+SPU是商品信息聚合的最小单位，是一组可复用、易检索的标准化信息的集合，该集合描述了一个产品的特性。通俗点讲，属性值、特性相同的商品就可以称为一个SPU。 
+
+SKU即库存进出计量的单位， 可以是以件、盒、托盘等为单位。在服装、鞋类商品中使用最多最普遍。 例如纺织品中一个SKU通常表示：规格、颜色、款式。 
+
+SKC：单款、单色 1、SKC指单款单色，C是Color。 2、SKC由来于服装行业进销存管理。早期做服装销售的公司IT水平低，上系统前由手工盘点和记录，每一款每一个颜色有多少就OK了，不记录尺码，因此单款单色就是最小库存管理单位。 
+
+ARPU注重的是一个时间段内运营商从每个用户所得到的利润。因此，高端的用户越多，ARPU越高。在这个时间段里，从运营商的运营情况来看，ARPU值高说明利润高，这段时间效益好。 
